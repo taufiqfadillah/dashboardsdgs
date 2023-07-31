@@ -33,9 +33,10 @@
 
                                     <input type="checkbox" class="mb-4" value="lsRememberMe" id="rememberMe"> <label for="rememberMe"> <small>Remember me</small> </label>
 
+                                    <!-- reCAPTCHAv2
                                     <div class="col-lg-8 recaptcha-wrapper mb-3">
                                         <div class="g-recaptcha" data-sitekey="6LerOLAeAAAAAB13SelURqtLMe7lhRuJDJenyAYQ"></div>
-                                    </div>
+                                    </div> -->
 
                                     <button type="submit" class="btn btn-primary btn-user btn-block" onclick="lsRememberMe()">
                                         Login

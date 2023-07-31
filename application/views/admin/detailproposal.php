@@ -72,58 +72,66 @@
     <hr class="mt-2 mb-5">
 
     <div class="row text-center text-lg-start">
-
         <div class="col-lg-2 col-md-4 col-6">
-            <a href="#" class="d-block mb-4 h-100">
-                <img class="img-fluid img-thumbnail" style="height: 150px;" src="<?= base_url('assets/proposal/') . $proposal['fotoidentitas']; ?>" alt="">
+            <a href="#" class="d-block mb-4 h-100 thumbnail" data-toggle="modal" data-target="#imageModal">
+                <img class="img-fluid img-thumbnail" style="height: 150px;" src="<?= $fotoidentitas_path; ?>" alt="">
             </a>
         </div>
         <div class="col-lg-2 col-md-4 col-6">
-            <a href="#" class="d-block mb-4 h-100">
-                <img class="img-fluid img-thumbnail" style="height: 150px;" src="<?= base_url('assets/proposal/') . $proposal['fotoidentitaskm']; ?>" alt="">
+            <a href="#" class="d-block mb-4 h-100 thumbnail" data-toggle="modal" data-target="#imageModal">
+                <img class="img-fluid img-thumbnail" style="height: 150px;" src="<?= $fotoidentitaskm_path; ?>" alt="">
             </a>
         </div>
         <div class="col-lg-2 col-md-4 col-6">
-            <a href="#" class="d-block mb-4 h-100">
-                <img class="img-fluid img-thumbnail" style="height: 150px;" src="<?= base_url('assets/proposal/') . $proposal['fotoidentitaskt']; ?>" alt="">
+            <a href="#" class="d-block mb-4 h-100 thumbnail" data-toggle="modal" data-target="#imageModal">
+                <img class="img-fluid img-thumbnail" style="height: 150px;" src="<?= $fotoidentitaskt_path; ?>" alt="">
             </a>
         </div>
         <div class="col-lg-2 col-md-4 col-6">
-            <a href="#" class="d-block mb-4 h-100">
-                <img class="img-fluid img-thumbnail" style="height: 150px;" src="<?= base_url('assets/proposal/') . $proposal['fotoidentitaspb']; ?>" alt="">
+            <a href="#" class="d-block mb-4 h-100 thumbnail" data-toggle="modal" data-target="#imageModal">
+                <img class="img-fluid img-thumbnail" style="height: 150px;" src="<?= $fotoidentitaspb_path; ?>" alt="">
             </a>
         </div>
         <div class="col-lg-2 col-md-4 col-6">
-            <a href="#" class="d-block mb-4 h-100">
-                <img class="img-fluid img-thumbnail" style="height: 150px;" src="<?= base_url('assets/proposal/') . $proposal['fotokkpb']; ?>" alt="">
+            <a href="#" class="d-block mb-4 h-100 thumbnail" data-toggle="modal" data-target="#imageModal">
+                <img class="img-fluid img-thumbnail" style="height: 150px;" src="<?= $fotokkpb_path; ?>" alt="">
             </a>
         </div>
         <?php foreach (explode(",", $proposal['filedokumentasi']) as $image) { ?>
             <div class="col-lg-2 col-md-4 col-6">
-                <a href="#" class="d-block mb-4 h-100">
-                    <img class="img-fluid img-thumbnail" style="height: 150px;" src="<?= base_url('assets/proposal/') . $image; ?>" alt="">
+                <a href="#" class="d-block mb-4 h-100 thumbnail" data-toggle="modal" data-target="#imageModal">
+                    <img class="img-fluid img-thumbnail" style="height: 150px;" src="<?= $filedokumentasi_path . $image; ?>" alt="">
                 </a>
             </div>
         <?php } ?>
+        <div class="row mt-4 mb-4">
+            <div class="col-lg-2 col-md-4 col-6">
+                <a href="<?= $fileproposal_path; ?>" target="_blank" rel="noopener noreferrer" class="btn btn-primary">Lihat File Proposal</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Image -->
+    <div class="modal fade" id="imageModal" tabindex="-1" role="dialog" aria-labelledby="imageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="imageModalLabel"></h5>
+                </div>
+                <div class="modal-body text-center">
+                    <img src="" class="img-fluid" alt="">
+                </div>
+            </div>
+        </div>
     </div>
     <script>
-        $(document).ready(function() {
-            $('.img-fluid').click(function() {
-                var src = $(this).attr('src');
-                $('<div>').css({
-                    background: 'rgba(0,0,0,0.7) url(' + src + ') no-repeat center',
-                    backgroundSize: 'contain',
-                    width: '100%',
-                    height: '100%',
-                    position: 'fixed',
-                    zIndex: '10000',
-                    top: '0',
-                    left: '0',
-                    cursor: 'zoom-out'
-                }).click(function() {
-                    $(this).remove();
-                }).appendTo('body');
-            });
+        // Set modal image and title based on clicked thumbnail
+        $(document).on('click', '.thumbnail', function() {
+            var title = $(this).find('img').attr('alt');
+            var src = $(this).find('img').attr('src');
+            $('#imageModalLabel').text(title);
+            $('#imageModal .modal-body img').attr('src', src);
+            $('#imageModal').modal('show');
         });
     </script>
 </div>

@@ -70,7 +70,7 @@
                                     <div class="badge-circle" title="online"></div>
                                 </div>
                                 <span class="ml-3 d-none d-lg-inline text-dark small">Hi, <?= $user['name']; ?></span>
-                                <span class="icon mr-3">
+                                <span class="icon mr-3 ml-2">
                                     <i class="fas fa-<?= ($user['role_id'] == 1) ? 'crown text-warning'  : 'check-circle text-info'; ?>"></i>
                                 </span>
                             </a>

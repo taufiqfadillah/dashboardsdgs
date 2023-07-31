@@ -8,7 +8,7 @@ class User extends CI_Controller
         parent::__construct();
         is_logged_in();
         $this->load->library('upload');
-        $this->load->helper(array('form', 'url'));
+        $this->load->helper(array('form', 'url', 'file'));
     }
 
     public function index()
@@ -91,7 +91,6 @@ class User extends CI_Controller
             redirect('user');
         }
     }
-
 
     public function changePassword()
     {
@@ -198,7 +197,7 @@ class User extends CI_Controller
         $this->form_validation->set_rules('nomoridentitaspb', 'Nomor Identitas PB', 'required');
         $this->form_validation->set_rules('nomorkkpb', 'Nomor KK PB', 'required');
         $this->form_validation->set_rules('jeniskelaminpb', 'Jenis Kelamin PB', 'required');
-        $this->form_validation->set_rules('deskripsi', 'Deskripsi', 'required');
+        $this->form_validation->set_rules('deskripsi', 'Deskripsi');
 
         // Check if the form validation is success
         if ($this->form_validation->run() == false) {
@@ -247,9 +246,8 @@ class User extends CI_Controller
                 $config['upload_path'] = './assets/proposal/';
 
                 // create new directory
-                $new_dir = date('YmdHis');
                 $user = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
-                $folder_name = $user['name'] . '_' . $full_name . '_' . $new_dir;
+                $folder_name = $user['name'] . '_' . $full_name;
 
                 if (!is_dir($config['upload_path'] . $folder_name)) {
                     mkdir($config['upload_path'] . $folder_name, 0777, TRUE);
@@ -344,8 +342,9 @@ class User extends CI_Controller
             $this->db->set('fileproposal', $new_file6);
             $this->db->set('deskripsi', $deskripsi);
             $this->db->set('filedokumentasi', implode(',', $new_file7));
-            $this->db->set('date_created', time());
+            $this->db->set('date_created', date('Y-m-d'));
             $this->db->set('status', 1);
+            $this->db->set('email_pengirim', $user['email']);
 
             $this->db->insert('proposal');
 
@@ -358,11 +357,24 @@ class User extends CI_Controller
     public function laporan()
     {
         $data['title'] = 'Laporan';
-        $data['user'] = $this->db->get_where('user', ['email' =>
-        $this->session->userdata('email')])->row_array();
-        $data['proposal'] = $this->db->get_where('proposal')->result_array();
+        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
+        $user_email = $data['user']['email'];
 
-        $this->form_validation->set_rules('name', 'Full Name', 'required|trim');
+        if ($data['user']['role_id'] != 1 && $data['user']['proposal_access'] == 0) {
+            $this->session->set_flashdata('message', '<div class="alert alert-danger" role="alert">Silahkan mengajukan proposal terlebih dahulu</div>');
+            redirect('user/proposal');
+        } else if ($data['user']['role_id'] != 1 && $data['user']['proposal_access'] == 1 && !$this->isUserEmailRegisteredInProposal($user_email)) {
+            $this->session->set_flashdata('message', '<div class="alert alert-danger" role="alert">Kuota pengajuan anda sudah habis, silahkan hubungi layanan kami!!</div>');
+            redirect('user/edit');
+        } else {
+            if ($data['user']['role_id'] == 1) {
+                $data['proposal'] = $this->db->get('proposal')->result_array();
+            } else {
+                $this->db->where('email_pengirim', $user_email);
+                $this->db->where('status', 3);
+                $data['proposal'] = $this->db->get('proposal')->result_array();
+            }
+        }
 
         $this->load->view('templates/header', $data);
         $this->load->view('templates/sidebar', $data);
@@ -371,18 +383,91 @@ class User extends CI_Controller
         $this->load->view('templates/footer');
     }
 
-    public function support()
+    private function isUserEmailRegisteredInProposal($user_email)
     {
-        $data['title'] = 'Support';
-        $data['user'] = $this->db->get_where('user', ['email' =>
-        $this->session->userdata('email')])->row_array();
+        $this->db->where('email_pengirim', $user_email);
+        $query = $this->db->get('proposal');
+        return $query->num_rows() > 0;
+    }
 
-        $this->form_validation->set_rules('name', 'Full Name', 'required|trim');
+    public function progress()
+    {
+        $data['title'] = 'Input Progress';
+        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
+        $user_email = $data['user']['email'];
 
+        $this->load->library('form_validation');
+
+        if ($data['user']['role_id'] != 1 && $data['user']['proposal_access'] == 0 && !$this->isUserEmailRegisteredInProposal($user_email)) {
+            $this->session->set_flashdata('message', '<div class="alert alert-danger" role="alert">Silahkan mengajukan proposal terlebih dahulu</div>');
+            redirect('user/proposal');
+        } else {
+            $this->db->where('email_pengirim', $user_email);
+            $this->db->where('status =', 3);
+            $data['proposal'] = $this->db->get('proposal')->result_array();
+        }
         $this->load->view('templates/header', $data);
         $this->load->view('templates/sidebar', $data);
         $this->load->view('templates/topbar', $data);
-        $this->load->view('user/support', $data);
+        $this->load->view('user/progress', $data);
         $this->load->view('templates/footer');
+    }
+
+
+    public function progressadd()
+    {
+        $user = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
+
+        $filesCount = count($_FILES['image']['name']);
+        $insertData = array();
+
+        for ($i = 0; $i < $filesCount; $i++) {
+            $_FILES['file']['name']     = $_FILES['image']['name'][$i];
+            $_FILES['file']['type']     = $_FILES['image']['type'][$i];
+            $_FILES['file']['tmp_name'] = $_FILES['image']['tmp_name'][$i];
+            $_FILES['file']['error']    = $_FILES['image']['error'][$i];
+            $_FILES['file']['size']     = $_FILES['image']['size'][$i];
+
+            $folder_name = $user['name'];
+            $config = array(
+                'allowed_types' => 'jpg|jpeg|png',
+                'upload_path'   => './assets/progress/'
+            );
+
+            if (!is_dir($config['upload_path'] . $folder_name)) {
+                mkdir($config['upload_path'] . $folder_name, 0777, true); // Membuat folder baru jika belum ada
+            }
+            $config['upload_path'] .= $folder_name . '/';
+
+            $this->load->library('upload', $config);
+            $this->upload->initialize($config);
+
+            if ($this->upload->do_upload('file')) {
+                $uploadData = $this->upload->data();
+                $insertData[$i]['image'] = $uploadData['file_name'];
+            } else {
+                // Jika upload gagal, tampilkan pesan error
+                $error = $this->upload->display_errors();
+                echo $error;
+            }
+        }
+
+        if (!empty($insertData)) {
+            $data = array(
+                'name'  => $user['name'],
+                'email' => $user['email'],
+                'image' => implode(',', array_column($insertData, 'image'))
+            );
+
+            $insert = $this->db->insert('progress', $data);
+
+            if ($insert) {
+                redirect('user/progress');
+                // $this->session->set_flashdata('message', '<div class="alert alert-success" role="alert">File berhasil ditambahkan</div>');
+            } else {
+                echo "Gagal Upload";
+                // $this->session->set_flashdata('message', '<div class="alert alert-danger" role="alert">File gagal ditambahkan</div>');
+            }
+        }
     }
 }

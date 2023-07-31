@@ -40,12 +40,14 @@
                         <td><?= $a['name']; ?></td>
                         <td><?= $a['email']; ?></td>
                         <td>
-                            <!-- <?= $a['role_id'] ? 'admin' : 'user'; ?> -->
+                            <!-- <?= $a['role_id'] ? 'admin' : ($a['role_id'] == 2 ? 'user' : 'donatur'); ?> -->
                             <?php if ($a["role_id"] == 1) : ?>
                                 <span>admin</span>
-                            <?php else : ?>
+                            <?php elseif ($a["role_id"] == 2) : ?>
                                 <span>user</span>
-                            <?php endif ?>
+                            <?php else : ?>
+                                <span>donatur</span>
+                            <?php endif; ?>
                         </td>
                         <td><?= $a['is_active'] ? 'Active' : 'Deactive'; ?></td>
                         <td><?= date('d F Y', $a['date_created']); ?></td>
@@ -130,6 +132,7 @@
                             <option value="">Select Role</option>
                             <option value="1">admin</option>
                             <option value="2">user</option>
+                            <option value="3">donatur</option>
                         </select>
                     </div>
                     <div class="form-group">

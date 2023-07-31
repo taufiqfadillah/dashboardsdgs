@@ -43,13 +43,12 @@
                                 Visitor (in Dashboard)</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-300">
                                 <?php
-                                $conn = mysqli_connect('localhost', 'root', '', 'web_login');
-
-                                $find_count = mysqli_query($conn, "SELECT * FROM visitor");
-                                while ($row = mysqli_fetch_assoc($find_count)) {
+                                $find_count = $this->db->get('visitor');
+                                foreach ($find_count->result_array() as $row) {
                                     $current_count = $row['visit'];
                                     $new_count = $current_count + 1;
-                                    $update_count = mysqli_query($conn, "UPDATE visitor SET visit = '" . $new_count . "'");
+                                    $this->db->set('visit', $new_count);
+                                    $this->db->update('visitor');
                                     echo $new_count;
                                 }
                                 ?>
@@ -268,15 +267,32 @@
             const desc = document.querySelector('.description');
             const loc = document.querySelector('.location');
 
-            fetch('https://api.openweathermap.org/data/2.5/weather?q=Jakarta&appid=3164758b1fde82e0268c9de2f85c7c90&units=metric')
-                .then(response => response.json())
-                .then(data => {
-                    const icon = `https://openweathermap.org/img/w/${data.weather[0].icon}.png`;
-                    weatherIcon.innerHTML = `<img src="${icon}" />`;
-                    temp.innerHTML = data.main.temp.toFixed(0);
-                    desc.innerHTML = data.weather[0].description;
-                    loc.innerHTML = data.name;
-                });
+            function success(position) {
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+                const apikey = '3164758b1fde82e0268c9de2f85c7c90';
+                const api = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apikey}&units=metric`;
+
+                fetch(api)
+                    .then(response => response.json())
+                    .then(data => {
+                        const icon = `https://openweathermap.org/img/w/${data.weather[0].icon}.png`;
+                        weatherIcon.innerHTML = `<img src="${icon}" />`;
+                        temp.innerHTML = data.main.temp.toFixed(0);
+                        desc.innerHTML = data.weather[0].description;
+                        loc.innerHTML = data.name;
+                    });
+            }
+
+            function error() {
+                loc.innerHTML = 'Lokasi tidak dapat diakses';
+            }
+
+            if (!navigator.geolocation) {
+                loc.innerHTML = 'Geolocation tidak didukung oleh browser Anda';
+            } else {
+                navigator.geolocation.getCurrentPosition(success, error);
+            }
         </script>
 
         <!-- Jam Digital -->

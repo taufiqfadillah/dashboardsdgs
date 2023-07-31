@@ -130,10 +130,6 @@ class Admin extends CI_Controller
         $data['user'] = $this->db->get_where('user', ['email' =>
         $this->session->userdata('email')])->row_array();
 
-        // user only
-        // $data['allusers'] = $this->db->get_where('user', ['role_id' => 2])->result_array();
-
-        // all user (admin & user)
         $data['allusers'] = $this->db->get_where('user')->result_array();
 
         $this->load->view('templates/header', $data);
@@ -664,10 +660,23 @@ class Admin extends CI_Controller
         $this->session->set_flashdata('message', ' proposal has been deleted!');
         redirect('admin/dataproposal');
     }
+
     public function proposaldetail($id)
     {
         $data['title'] = 'Detail Proposal';
         $data['proposal'] = $this->db->get_where('proposal', ['id' => $id])->row_array();
+
+        // get proposal folder name based on id
+        $folder_name = $data['proposal']['nama_pengirim'] . '_' . $data['proposal']['full_name'];
+
+        // get file paths based on proposal folder name
+        $data['fotoidentitas_path'] = base_url('assets/proposal/') . $folder_name . '/' . $data['proposal']['fotoidentitas'];
+        $data['fotoidentitaskm_path'] = base_url('assets/proposal/') . $folder_name . '/' . $data['proposal']['fotoidentitaskm'];
+        $data['fotoidentitaskt_path'] = base_url('assets/proposal/') . $folder_name . '/' . $data['proposal']['fotoidentitaskt'];
+        $data['fotoidentitaspb_path'] = base_url('assets/proposal/') . $folder_name . '/' . $data['proposal']['fotoidentitaspb'];
+        $data['fotokkpb_path'] = base_url('assets/proposal/') . $folder_name . '/' . $data['proposal']['fotokkpb'];
+        $data['filedokumentasi_path'] = base_url('assets/proposal/') . $folder_name . '/';
+        $data['fileproposal_path'] = base_url('assets/proposal/') . $folder_name . '/' . $data['proposal']['fileproposal'];
 
         $this->load->view('templates/header', $data);
         $this->load->view('admin/detailproposal', $data);

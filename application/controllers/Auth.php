@@ -6,7 +6,7 @@ class Auth extends CI_Controller
     public function __construct()
     {
         parent::__construct();
-        $this->load->library('form_validation');
+        $this->load->library('form_validation', 'email');
     }
     public function index()
     {
@@ -32,37 +32,6 @@ class Auth extends CI_Controller
         $email = $this->input->post('email');
         $password = $this->input->post('password');
         $user = $this->db->get_where('user', ['email' => $email])->row_array();
-
-        if ($_SERVER['REQUEST_METHOD'] == "POST") {
-
-            if (isset($_POST['g-recaptcha-response'])) {
-                $token = $_POST['g-recaptcha-response'];
-                $url = 'https://www.google.com/recaptcha/api/siteverify';
-                $data = array(
-                    'secret' => '6LfG5XUlAAAAACvyRbN-L0QBc4_jdsoUbxJ0bFwC',
-                    'response' => $token
-                );
-
-                $options = array(
-                    'http' => array(
-                        'header' => "Content-Type: application/x-www-form-urlencoded\r\n",
-                        'method' => 'POST',
-                        'content' => http_build_query($data)
-                    )
-                );
-
-                $context  = stream_context_create($options);
-                $result = file_get_contents($url, false, $context);
-                $response = json_decode($result);
-
-                if ($response->success && $response->score >= 0.5) {
-                    echo json_encode(array('success' => true, "msg" => "You are not a robot!", "response" => $response));
-                } else {
-                    echo json_encode(array('success' => false, "msg" => "You are a robot!", "response" => $response));
-                }
-            }
-        }
-
 
         // jika usernya ada
 
@@ -108,20 +77,23 @@ class Auth extends CI_Controller
             redirect('auth');
         }
     }
+
     public function registration()
     {
         if ($this->session->userdata('email')) {
             redirect('user');
         }
 
-        $this->form_validation->set_rules('name', 'Name', 'required|trim');
+        $this->form_validation->set_rules('name', 'Name', 'required|trim|is_unique[user.name]', [
+            'is_unique' => 'This Name has Already Registered!'
+        ]);
         $this->form_validation->set_rules('email', 'Email', 'required|trim|valid_email|is_unique[user.email]', [
-            'is_unique' => 'This Email has Already Registred!'
+            'is_unique' => 'This Email has Already Registered!'
         ]);
-        $this->form_validation->set_rules('password1', 'Password', 'required|trim|min_length[3]|matches[password2]', [
-            'matches' => 'Password dont match!', 'min_length' => 'Password too short!'
+        $this->form_validation->set_rules('password1', 'Password', 'required|trim|min_length[8]|matches[password2]', [
+            'matches' => 'Password doesn\'t match!', 'min_length' => 'Password too short!'
         ]);
-        $this->form_validation->set_rules('password2', 'Password', 'required|trim|matches[password1]');
+        $this->form_validation->set_rules('password2', 'Password Confirmation', 'required|trim|matches[password1]');
 
         if ($this->form_validation->run() == false) {
             $data['title'] = 'SDGs User Registration';
@@ -129,19 +101,30 @@ class Auth extends CI_Controller
             $this->load->view('auth/registration');
             $this->load->view('templates/auth_footer');
         } else {
-            $data =
-                [
-                    'name' => htmlspecialchars($this->input->post('name', true)),
-                    'email' => htmlspecialchars($this->input->post('email', true)),
-                    'image' => 'default.jpg',
-                    'password' => password_hash($this->input->post('password1'), PASSWORD_DEFAULT),
-                    'role_id' => 2,
-                    'level_id' => 'user',
-                    'is_active' => 0,
-                    'date_created' => time()
-                ];
+            $data = [
+                'name' => htmlspecialchars($this->input->post('name', true)),
+                'email' => htmlspecialchars($this->input->post('email', true)),
+                'image' => 'default.jpg',
+                'password' => password_hash($this->input->post('password1'), PASSWORD_DEFAULT),
+                'role_id' => 2,
+                'is_active' => 0,
+                'date_created' => time()
+            ];
 
-            // sipakan token
+            // Periksa apakah nama pengguna sudah ada dalam database
+            $existingUser = $this->db->get_where('user', ['name' => $data['name']])->row();
+            if ($existingUser) {
+                $this->session->set_flashdata('message', '
+            <div class="alert alert-danger" role="alert">
+            Username already exists. Please choose a different username.
+            </div>');
+                redirect('auth/registration');
+            }
+
+            // Simpan data pengguna baru ke database
+            $this->db->insert('user', $data);
+
+            // Buat token
             $email = $this->input->post('email');
             $token = base64_encode(random_bytes(32));
             $user_token = [
@@ -150,16 +133,15 @@ class Auth extends CI_Controller
                 'date_created' => time()
             ];
 
-            $this->db->insert('user', $data);
             $this->db->insert('user_token', $user_token);
 
             $this->_sendEmail($token, 'verify');
 
             $this->session->set_flashdata('message', '
-            <div class="alert alert-success" role="alert">
-            Congratulation, Please check your Email for actived your account!
-            <small class="text-dark"><br>if you dont received an email activation <a href="' . base_url() . 'auth/resendemail' . '">click here</a></small>
-            </div>');
+        <div class="alert alert-success" role="alert">
+        Congratulations! Please check your email to activate your account.
+        <small class="text-dark"><br>If you didn\'t receive the activation email, <a href="' . base_url() . 'auth/resendemail' . '">click here</a>.</small>
+        </div>');
             redirect('auth');
         }
     }
@@ -167,28 +149,31 @@ class Auth extends CI_Controller
     private function _sendEmail($token, $type)
     {
         $config = [
-            'protocol'  => 'smtp',
-            'smtp_host' => 'ssl://smtp.googlemail.com',
-            'smtp_user' => 'sdgsuniversitashasanuddin@gmail.com',
-            'smtp_pass' => 'ifcdehcatrnenddc',
-            'smtp_port' => 465,
-            'mailtype'  => 'html',
-            'charset'   => 'utf-8',
-            'newline'   => "\r\n"
+            'protocol' => 'smtp',
+            'smtp_host' => 'smtp.gmail.com',
+            'smtp_user' => 'sdgscenterunhas@gmail.com',
+            'smtp_pass' => 'fnrgyjesfxwoyomj',
+            'smtp_port' => 587,
+            'smtp_crypto' => 'tls',
+            'mailtype' => 'html',
+            'charset' => 'utf-8',
+            'newline' => "\r\n"
         ];
 
-        $this->load->library('email', $config);
+        $this->load->library('email');
         $this->email->initialize($config);
 
-        $this->email->from('sdgsuniversitashasanuddin@gmail.com', 'SDGs Universitas Hasanuddin');
+        $this->email->from('sdgscenterunhas@gmail.com', 'SDGs Universitas Hasanuddin');
         $this->email->to($this->input->post('email'));
 
         if ($type == 'verify') {
             $this->email->subject('Account Verification Dashboard SDGs Unhas');
-            $this->email->message('Click this link to verify your account : <a href="' . base_url() . 'auth/verify?email=' . $this->input->post('email') . '&token=' . urlencode($token) . '">Activate</a>');
+            $message = $this->load->view('auth/email-activation', ['token' => $token], true);
+            $this->email->message($message);
         } else if ($type == 'forgot') {
             $this->email->subject('Reset Password');
-            $this->email->message('Click this link to reset your password : <a href="' . base_url() . 'auth/resetpassword?email=' . $this->input->post('email') . '&token=' . urlencode($token) . '">Reset Password</a>');
+            $message = $this->load->view('auth/email-forgotpassword', ['token' => $token], true);
+            $this->email->message($message);
         }
 
         if ($this->email->send()) {

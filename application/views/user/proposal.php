@@ -1,6 +1,7 @@
 <!-- CONTAINER -->
 <div class="container d-flex align-items-center min-vh-100">
     <?= form_open_multipart('user/proposaladd'); ?>
+    <?= $this->session->flashdata('message'); ?>
 
     <div class="row g-0 justify-content-center">
         <!-- TITLE -->
@@ -8,7 +9,7 @@
             <div id="title-container">
                 <img class="covid-image" src="<?= base_url(); ?>/assets/img/logo.png" />
                 <h2>SDGs Universitas Hasanuddin</h2>
-                <h3>Proposal Checker Form</h3>
+                <h3>Proposal Form</h3>
                 <p align="left">
                     Kontak Kami :<br>
                     Jl. Perintis Kemerdekaan KM.10, Tamalanrea Indah, Kec. Tamalanrea, Kota Makassar, Sulawesi Selatan.<br>

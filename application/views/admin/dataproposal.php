@@ -27,7 +27,7 @@
                         <td><?= $p['address']; ?></td>
                         <td><?= $p['phone']; ?></td>
                         <td><?= $p['namapb']; ?></td>
-                        <td><?= date('d F Y', $p['date_created']); ?></td>
+                        <td><?= date('d F Y', strtotime($p['date_created'])); ?></td>
                         <td>
                             <?php
                             $status = $p['status'];
